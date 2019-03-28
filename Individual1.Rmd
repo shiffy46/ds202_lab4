@@ -1,0 +1,91 @@
+---
+title: "Individual1"
+output: html_document
+author: Sam Shifflett
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+defense <- read_excel('cyclonesFootball2018.xlsx', sheet='Defensive')
+offense <- read_excel('cyclonesFootball2018.xlsx', sheet='Offensive')
+bio <- read_excel('cyclonesFootball2018.xlsx', sheet='Biography')
+```
+
+Cleaning Data
+1)
+```{r}
+defense[,c(1,2)] <- sapply(defense[,c(1,2)], as.factor)
+defense[,3:11] <- sapply(defense[,3:11], as.numeric)
+defClean <- defense
+offense[,c(1,2)] <- sapply(offense[,c(1,2)], as.factor)
+offense[,3:12] <- sapply(offense[,3:12], as.numeric)
+offClean <- offense
+bio[,c(3,4)] <- sapply(bio[,c(3,4)], as.numeric)
+bioClean <- bio
+```
+
+Tidying(1)
+1)
+```{r}
+library("tidyverse")
+defGather <- gather(defClean,Statistic,Value,-c(1,2))
+defGather
+```
+
+2)
+```{r}
+p <- ggplot(defGather, aes(x = Opponent_Opponent, y=Value)) + geom_histogram(stat="identity") + facet_wrap(~Statistic) + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + xlab("Opponent") + ylab("Total Amount") + ggtitle("Defensive stat count per game")
+p
+```
+
+The Turnovers are the most rare occurences in games so causing turnovers is a special skill.
+
+3)
+```{r}
+defCleanFiltered <- defClean %>% filter(Opponent_Opponent == "West Virginia" | Opponent_Opponent == "Kansas State")
+defCleanSolo <- defCleanFiltered[,1:3]
+defCleanSolo <- defCleanSolo %>% filter(Tackles_Solo != 0)
+df <- defCleanSolo %>% spread(key=Opponent_Opponent, value=Tackles_Solo)
+df[is.na(df)] <- 0
+names(df) <- c("Player","KS","WV")
+ggplot(df,aes(x=WV,y=KS)) + geom_point() + geom_smooth(method="lm") + ylim(0,10) + xlim(0,10)
+```
+
+Though the trendline shows a slope favoring the West Virginia game, the total amount of tackles in the Kansas state game was more so ISU had a better Defensive game against Kansas State.
+
+
+Tidying(2)
+1)
+```{r}
+dfBio <- bioClean %>% separate(Hometown,c("City","State"),sep=",")
+eachState <- dfBio %>%
+  group_by(State) %>%
+  summarise(totalPlayer = n())
+head(eachState)
+```
+
+```{r}
+mergeDf <- merge(bioClean,offClean)
+recYds <- mergeDf %>% group_by(Name) %>% summarise(totalRYDS = sum(Receiving_YDS))
+weight <- mergeDf[,c(1,4)]
+singleWeight <- unique(weight)
+df1 <- merge(recYds,singleWeight)
+ggplot(df1,aes(x=totalRYDS,y=Weight)) + geom_point() + geom_smooth(method="lm")
+```
+
+There doesn't seem to be much of a correlation between the weight of a player and their total receiving yards. The only thing that I would point out is that there are occurences of heavier players(240lbs or above) receiving in short distances, but none in long distance.
+
+
+```{r}
+df2 <- merge(bioClean,offClean)
+df2 <- df2[df2$Position == "Wide Receiver",]
+df2 %>% group_by(Class) %>% summarize(totalRYDS = sum(Receiving_YDS))
+```
+
+I wanted to see which classes had the most receiving yards. It semms like redshirting is the way to go if you want to be a successful receiver at ISU.
+
+
