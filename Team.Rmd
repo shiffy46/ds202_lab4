@@ -1,0 +1,46 @@
+---
+title: "Team"
+author: "Sam Shifflett"
+date: "3/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+defense <- read_excel('cyclonesFootball2018.xlsx', sheet='Defensive')
+offense <- read_excel('cyclonesFootball2018.xlsx', sheet='Offensive')
+bio <- read_excel('cyclonesFootball2018.xlsx', sheet='Biography')
+```
+
+Cleaning Data
+1)
+```{r}
+defense[,c(1,2)] <- sapply(defense[,c(1,2)], as.factor)
+defense[,3:11] <- sapply(defense[,3:11], as.numeric)
+defClean <- defense
+offense[,c(1,2)] <- sapply(offense[,c(1,2)], as.factor)
+offense[,3:12] <- sapply(offense[,3:12], as.numeric)
+offClean <- offense
+bio[,c(3,4)] <- sapply(bio[,c(3,4)], as.numeric)
+bioClean <- bio
+```
+
+Tidying(1)
+1)
+```{r}
+library("tidyverse")
+defGather <- gather(defClean,Statistic,Value,-c(1,2))
+defGather
+```
+
+2)
+```{r}
+p <- ggplot(defGather, aes(x = Opponent_Opponent, y=Value)) + geom_histogram(stat="identity") + facet_wrap(~Statistic) + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + xlab("Opponent") + ylab("Total Amount") + ggtitle("Defensive stat count per game")
+p
+```
+
+The Turnovers are the most rare occurences in games so causing turnovers is a special skill.
